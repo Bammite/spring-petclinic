@@ -47,5 +47,10 @@ _site/
 *.css
 !petclinic.css
 
-### Terraform ###
+### Exclusions Terraform ###
 /terraform/.terraform/
+*.tfstate.backup
+
+### AUTORISER LE STATE POUR LE CI/CD ###
+!terraform/terraform.tfstate
+!terraform/terraform.tfstate.*
