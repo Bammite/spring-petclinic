@@ -68,18 +68,40 @@ jobs:
           cd terraform
           terraform apply -auto-approve
 
-      # 9. (Optional academic workaround) Commit state file back to repository
-      # WARNING: Not for production because state files contain plain-text secrets.
-      # For your academic TP, this prevents losing track of created AWS resources.
-      - name: Commit and Push Terraform State
-        if: always() # Run even if previous steps fail to preserve state
+      # 9. Attendre que l'Instance Refresh de l'ASG soit terminé
+      - name: Wait for ASG Instance Refresh
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add terraform/terraform.tfstate* || true
-          if git diff --cached --quiet; then
-            echo "No changes in state file."
-          else
-            git commit -m "Auto-update Terraform state [skip ci]"
-            git push origin HEAD:${{ github.ref_name }}
+          ASG_NAME=$(cd terraform && terraform output -raw asg_name || echo "")
+          if [ -n "$ASG_NAME" ]; then
+            echo "Waiting for instance refresh on ASG: $ASG_NAME"
+            aws autoscaling wait instance-refresh-completed --auto-scaling-group-name $ASG_NAME --region us-east-1
           fi
+
+      # 10. Smoke Test de santé sur l'ALB
+      - name: Run Smoke Test
+        id: smoke_test
+        run: |
+          ALB_URL=$(cd terraform && terraform output -raw alb_url_https)
+          echo "Testing application health at $ALB_URL/actuator/health"
+          
+          # Tentative de connexion pendant 2 minutes (12 x 10 sec)
+          for i in {1..12}; do
+            HTTP_STATUS=$(curl -k -s -o /dev/null -w "%{http_code}" "$ALB_URL/actuator/health" || true)
+            if [ "$HTTP_STATUS" -eq 200 ]; then
+              echo "SUCCESS: Smoke test passed with status 200!"
+              exit 0
+            fi
+            echo "Attempt $i: Received status $HTTP_STATUS. Retrying in 10s..."
+            sleep 10
+          done
+          
+          echo "ERROR: Smoke test failed after 2 minutes!"
+          exit 1
+
+      # 11. Rollback automatique en cas d'échec du Smoke Test
+      - name: Rollback ASG on Smoke Test Failure
+        if: failure() && steps.smoke_test.outcome == 'failure'
+        run: |
+          ASG_NAME=$(cd terraform && terraform output -raw asg_name || echo "")
+          echo "Smoke test failed. Cancelling/Rolling back Instance Refresh..."
+          aws autoscaling cancel-instance-refresh --auto-scaling-group-name $ASG_NAME --region us-east-1 || true
