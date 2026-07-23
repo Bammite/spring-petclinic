@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: write # Required if committing the state file back to the repo
+  id-token: write
 
 jobs:
   deploy:
