@@ -35,13 +35,13 @@ jobs:
       - name: Build JAR with Maven
         run: ./mvnw clean package -DskipTests
 
-      # 4. Configure AWS Credentials via GitHub OIDC (no long-lived AWS secrets)
+# 4. Configure AWS Credentials via Access Keys (sans OIDC)
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
-          audience: sts.amazonaws.com
 
       # 5. Set up Terraform CLI
       - name: Setup Terraform
