@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rapport de Justification & Note GitOps — TP4 Spring PetClinic</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --primary-light: #eff6ff;
+      --accent: #f59e0b;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --bg-body: #f8fafc;
+      --card-bg: #ffffff;
+      --border-color: #e2e8f0;
+      --radius: 12px;
+      --shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--bg-body);
+      color: var(--text-main);
+      line-height: 1.6;
+      padding: 2rem;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      padding: 3rem;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border-color);
+    }
+
+    header {
+      border-bottom: 2px solid var(--border-color);
+      padding-bottom: 1.5rem;
+      margin-bottom: 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .header-title h1 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: var(--primary);
+    }
+
+    .header-title p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .badge {
+      background: var(--primary-light);
+      color: var(--primary-dark);
+      padding: 0.4rem 0.8rem;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 0.85rem;
+    }
+
+    .btn-print {
+      background: var(--primary);
+      color: #ffffff;
+      border: none;
+      padding: 0.55rem 1.1rem;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.88rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+    }
+
+    .btn-print:hover {
+      background: var(--primary-dark);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
+    }
+
+    .meta-box {
+      background: #f1f5f9;
+      padding: 1.25rem;
+      border-radius: 8px;
+      margin-bottom: 2rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+    }
+
+    .meta-item label {
+      display: block;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+
+    .meta-item span, .meta-item a {
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--text-main);
+      text-decoration: none;
+    }
+
+    .meta-item a {
+      color: var(--primary);
+      word-break: break-all;
+    }
+
+    .meta-item a:hover {
+      text-decoration: underline;
+    }
+
+    h2 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.4rem;
+      color: #1e293b;
+      margin: 2rem 0 1rem 0;
+      padding-bottom: 0.4rem;
+      border-bottom: 2px solid var(--primary-light);
+    }
+
+    h3 {
+      font-size: 1.1rem;
+      color: var(--primary-dark);
+      margin: 1.2rem 0 0.6rem 0;
+    }
+
+    p, li {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin-bottom: 0.8rem;
+    }
+
+    ul, ol {
+      padding-left: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.5rem 0;
+      font-size: 0.9rem;
+    }
+
+    th, td {
+      padding: 0.75rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    th {
+      background-color: #f8fafc;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .challenge-card {
+      background: #f8fafc;
+      border-left: 4px solid var(--primary);
+      padding: 1rem 1.25rem;
+      margin-bottom: 1rem;
+      border-radius: 0 8px 8px 0;
+    }
+
+    .challenge-card h4 {
+      color: var(--text-main);
+      font-size: 1rem;
+      margin-bottom: 0.4rem;
+    }
+
+    .gallery {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+      margin-top: 1.5rem;
+    }
+
+    .gallery-item {
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      overflow: hidden;
+      page-break-inside: avoid;
+    }
+
+    .gallery-item img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .comment-box {
+      padding: 1rem;
+      background: #fafafa;
+      border-top: 1px dashed var(--border-color);
+      font-style: italic;
+      color: #64748b;
+      font-size: 0.88rem;
+    }
+
+    @media print {
+      body { background: white; padding: 0; }
+      .container { border: none; box-shadow: none; padding: 0; max-width: 100%; }
+      .btn-print { display: none !important; }
+      @page { margin: 1.5cm; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="header-title">
+        <h1>TP4 — Automatisation CI/CD & GitOps</h1>
+        <p>Spring PetClinic sur AWS (Terraform + GitHub Actions)</p>
+      </div>
+      <div class="header-actions">
+        <span class="badge">AWS Well-Architected</span>
+        <button onclick="window.print()" class="btn-print">📥 Télécharger en PDF</button>
+      </div>
+    </header>
+
+    <div class="meta-box">
+      <div class="meta-item">
+        <label>Dépôt Git Officiel</label>
+        <a href="https://github.com/Bammite/spring-petclinic" target="_blank">https://github.com/Bammite/spring-petclinic</a>
+      </div>
+      <div class="meta-item">
+        <label>Établissement</label>
+        <span>ISI Dakar</span>
+      </div>
+      <div class="meta-item">
+        <label>Formation</label>
+        <span>M1 Virtualisation, Cloud & Réseaux</span>
+      </div>
+      <div class="meta-item">
+        <label>Binôme</label>
+        <span>Pince Y. Y. BAMMITE & Josephine M. MAFOUKA & Bineta DIALLO</span>
+      </div>
+      <div class="meta-item">
+        <label>Instructeur</label>
+        <span>Baye Sabarane LAM</span>
+      </div>
+    </div>
+
+    <h2>1. Contexte & Architecture Technique</h2>
+    <p>
+      L'objectif du TP4 est d'industrialiser le déploiement de l'application Spring PetClinic sur AWS en appliquant les principes <strong>GitOps</strong> et <strong>CI/CD</strong>.
+      L'infrastructure est entièrement déclarée sous forme de code (<em>Infrastructure as Code</em>) avec <strong>Terraform</strong> et hébergée sur la région <code>us-east-1</code>.
+    </p>
+
+    <h3>Composants de l'Infrastructure AWS (Multi-AZ)</h3>
+    <ul>
+      <li><strong>Réseau (VPC Multi-AZ)</strong> : Découpé en sous-réseaux Publics (ALB, NAT Gateways), Privés Application (Auto Scaling Group) et Privés Base de Données (RDS MySQL).</li>
+      <li><strong>Application Load Balancer (ALB)</strong> : Point d'entrée HTTPS sécurisé avec redirection HTTP et terminaison SSL/TLS.</li>
+      <li><strong>Auto Scaling Group (ASG)</strong> : Gestion dynamique de 2 à 4 instances EC2 avec politique de mise à l'échelle automatique basée sur l'utilisation CPU.</li>
+      <li><strong>Base de Données RDS MySQL Multi-AZ</strong> : Haute disponibilité avec réplication synchrone et basculement automatique.</li>
+      <li><strong>Sécurité & Secrets</strong> : AWS Secrets Manager et KMS pour le stockage et chiffrement des identifiants sans aucun secret en dur.</li>
+    </ul>
+
+    <h2>2. Pipeline CI/CD & Principes GitOps</h2>
+    <p>
+      Le pipeline est orchestré par <strong>GitHub Actions</strong> et s'exécute automatiquement à chaque événement sur la branche principale :
+    </p>
+    <ol>
+      <li><strong>Build & Test</strong> : Compilation de l'application Spring Boot via <code>./mvnw clean package -DskipTests</code> et génération du JAR.</li>
+      <li><strong>Security Gates</strong> : Contrôle de qualité du code via Checkstyle / NoHTTP.</li>
+      <li><strong>Terraform Init / Plan / Apply</strong> : Déploiement automatisé des ressources AWS déclarées.</li>
+      <li><strong>Smoke Test & Healthcheck</strong> : Validation opérationnelle sur l'endpoint <code>/actuator/health</code> de l'ALB.</li>
+      <li><strong>Rollback Automatique</strong> : Annulation immédiate en cas d'échec de la sonde de santé.</li>
+    </ol>
+
+    <h2>3. Défis Relevés (Well-Architected Framework)</h2>
+
+    <div class="challenge-card">
+      <h4>Défi 1 — Déploiement sans interruption (Zero-Downtime)</h4>
+      <p>Mise en place d'un <em>Instance Refresh</em> sur l'Auto Scaling Group avec <code>min_healthy_percentage = 100</code> et <code>max_healthy_percentage = 200</code>. Les nouvelles instances sont démarrées en parallèle et intégrées à l'ALB avant la suppression des anciennes.</p>
+    </div>
+
+    <div class="challenge-card">
+      <h4>Défi 2 — Rollback Automatique sur échec</h4>
+      <p>Association d'une alarme CloudWatch <code>HTTPCode_Target_5XX_Count</code> sur l'ALB. Si le Smoke Test ou les métriques détectent une erreur 5xx, la commande <code>cancel-instance-refresh</code> est automatiquement déclenchée.</p>
+    </div>
+
+    <div class="challenge-card">
+      <h4>Défi 4 — Portes de Sécurité (Security Gates)</h4>
+      <p>Intégration du plugin Maven Checkstyle / NoHTTP pour interdire l'utilisation d'URLs non sécurisées et application du principe du moindre privilège sur les rôles IAM EC2.</p>
+    </div>
+
+    <div class="challenge-card">
+      <h4>Défi 5 — Promotion Multi-Environnement avec Approbation</h4>
+      <p>Découpage du pipeline en chaînage d'environnements (<code>dev</code> → <code>staging</code> → <code>prod</code>). La transition vers la production est soumise à une approbation manuelle obligatoire (<em>Required Reviewers</em>).</p>
+    </div>
+
+    <h2>4. Tableau Comparatif des Stratégies de Déploiement (Partie C)</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Critère</th>
+          <th>EC2 + Auto Scaling Group (Choisi)</th>
+          <th>ECS Fargate</th>
+          <th>AWS App Runner</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Coût</strong></td>
+          <td>Modéré (Pay-per-instance + NAT GW)</td>
+          <td>Variable selon vCPU / RAM réservés</td>
+          <td>Très faible à faible charge (scale to 0)</td>
+        </tr>
+        <tr>
+          <td><strong>Complexité Ops</strong></td>
+          <td>Moyenne (Gestion OS, Scripts UserData)</td>
+          <td>Faible (Conteneurs sans gestion de serveur)</td>
+          <td>Minimale (100% Serverless PaaS)</td>
+        </tr>
+        <tr>
+          <td><strong>Résilience</strong></td>
+          <td>Très Haute (Multi-AZ + ASG + ALB)</td>
+          <td>Très Haute (Orchestration native)</td>
+          <td>Haute (Géré par AWS)</td>
+        </tr>
+        <tr>
+          <td><strong>Maîtrise & Contrôle</strong></td>
+          <td>Totale (Accès SSH/SSM, OS, réseau)</td>
+          <td>Élevée (Docker / Task definitions)</td>
+          <td>Limitée (Abstrait la couche réseau)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>5. Difficultés Rencontrées & Solutions (Partie D)</h2>
+    <ul>
+      <li><strong>Exclusion Checkstyle sur Terraform</strong> : Le plugin Checkstyle NoHTTP analysait par erreur le fichier <code>terraform.tfstate</code>. Solution : Ajout de <code>**/terraform/**/*</code> aux exclusions du <code>pom.xml</code>.</li>
+      <li><strong>Nettoyage des ressources orphelines AWS</strong> : Des résidus d'exécutions Terraform passées provoquaient des erreurs de conflit (SGs, NAT Gateways). Solution : Écriture d'un script bash automatisé de purge complète.</li>
+      <li><strong>Fédération d'accès & Secrets</strong> : Configuration sécurisée des variables d'accès AWS dans les GitHub Repository Secrets.</li>
+    </ul>
+
+    <h2>6. Galerie des Preuves de Déploiement</h2>
+    <div class="gallery">
+      <div class="gallery-item">
+        <img src="assets/capture_1.png" alt="Architecture AWS ou Pipeline GitHub Actions">
+        <div class="comment-box">
+          [Capture 1 : Vue de l'infrastructure AWS / Schéma d'architecture]
+        </div>
+      </div>
+
+      <div class="gallery-item">
+        <img src="assets/capture_2.png" alt="Exécution du Pipeline CI/CD GitHub Actions">
+        <div class="comment-box">
+          [Capture 2 : Pipeline GitHub Actions fonctionnel avec étapes Build, Test & Deploy]
+        </div>
+      </div>
+
+      <div class="gallery-item">
+        <img src="assets/capture_3.png" alt="Application Load Balancer & Target Group AWS">
+        <div class="comment-box">
+          [Capture 3 : Application Load Balancer et Target Group avec instances Saines]
+        </div>
+      </div>
+
+      <div class="gallery-item">
+        <img src="assets/capture_4.png" alt="Auto Scaling Group & Instance Refresh">
+        <div class="comment-box">
+          [Capture 4 : Auto Scaling Group et suivi d'Instance Refresh Zero-Downtime]
+        </div>
+      </div>
+
+      <div class="gallery-item">
+        <img src="assets/capture_5.png" alt="Base de données Amazon RDS Multi-AZ">
+        <div class="comment-box">
+          [Capture 5 : Base de données Amazon RDS MySQL en mode Multi-AZ]
+        </div>
+      </div>
+
+      <div class="gallery-item">
+        <img src="assets/capture_6.png" alt="Interface Spring PetClinic fonctionnelle">
+        <div class="comment-box">
+          [Capture 6 : Application Spring PetClinic fonctionnelle accessible via l'ALB]
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
