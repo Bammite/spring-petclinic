@@ -1,28 +1,25 @@
-name: CI/CD Deployment - Spring PetClinic to AWS
+name: CI/CD Multi-Environment Pipeline - Spring PetClinic
 
 on:
   push:
     branches:
       - main
-      - master
 
 permissions:
-  contents: write # Required if committing the state file back to the repo
+  contents: read
+  id-token: write # Indispensable si vous passez à OIDC
 
 jobs:
-  deploy:
-    name: Build & Deploy
+  # =======================================================
+  # 1. BUILD : Compiles the JAR once for all environments
+  # =======================================================
+  build:
+    name: 🏗️ Build Application Artifact
     runs-on: ubuntu-latest
-
     steps:
-      # 1. Checkout the source code
       - name: Checkout Code
         uses: actions/checkout@v4
-        with:
-          # Pull all history so git commit works properly if committing state file
-          fetch-depth: 0
 
-      # 2. Set up Java JDK 17 (Required to build the Spring Boot JAR)
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -30,11 +27,33 @@ jobs:
           distribution: 'corretto'
           cache: 'maven'
 
-      # 3. Build the application and generate the JAR
       - name: Build JAR with Maven
         run: ./mvnw clean package -DskipTests
 
-# 4. Configure AWS Credentials via Access Keys (sans OIDC)
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: petclinic-jar
+          path: target/spring-petclinic-*.jar
+
+  # =======================================================
+  # 2. DEV : Automatic deployment to Dev
+  # =======================================================
+  deploy-dev:
+    name: 🚀 Deploy to DEV
+    needs: build
+    runs-on: ubuntu-latest
+    environment: dev
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Download Build Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: petclinic-jar
+          path: target/
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -42,49 +61,109 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
-      # 5. Set up Terraform CLI
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.5.7
-          terraform_wrapper: false # Disabled wrapper to keep raw output for state modifications
 
-
-      # 6. Initialize Terraform
-      - name: Terraform Init
+      # Isolation du State via Terraform Workspace
+      - name: Deploy Dev Infrastructure
         run: |
           cd terraform
           terraform init
+          terraform workspace select -or-create dev
+          terraform apply -auto-approve -var="environment=dev"
 
-      # 7. Terraform Plan (Optional check)
-      - name: Terraform Plan
+  # =======================================================
+  # 3. STAGING : Deployment & Automated Testing in Staging
+  # =======================================================
+  deploy-staging:
+    name: 🧪 Deploy to STAGING
+    needs: deploy-dev
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Download Build Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: petclinic-jar
+          path: target/
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.5.7
+
+      # Isolation du State via Terraform Workspace
+      - name: Deploy Staging Infrastructure
         run: |
           cd terraform
-          terraform plan
+          terraform init
+          terraform workspace select -or-create staging
+          terraform apply -auto-approve -var="environment=staging"
 
-      # 8. Deploy the infrastructure (and automatically upload the build JAR to S3)
-      - name: Terraform Apply
+  # =======================================================
+  # 4. PROD : Requires Approval -> Deploy to Production
+  # =======================================================
+  deploy-prod:
+    name: 🛡️ Deploy to PRODUCTION
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    environment: prod # Blocage manuel géré par GitHub Environments
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download Build Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: petclinic-jar
+          path: target/
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.5.7
+
+      # Isolation du State via Terraform Workspace
+      - name: Terraform Init & Apply (Prod)
         run: |
           cd terraform
-          terraform apply -auto-approve
+          terraform init
+          terraform workspace select -or-create prod
+          terraform apply -auto-approve -var="environment=prod"
 
-      # 9. Attendre que l'Instance Refresh de l'ASG soit terminé
-      - name: Wait for ASG Instance Refresh
+      - name: Wait for ASG Instance Refresh (Zero-Downtime)
         run: |
           ASG_NAME=$(cd terraform && terraform output -raw asg_name || echo "")
           if [ -n "$ASG_NAME" ]; then
-            echo "Waiting for instance refresh on ASG: $ASG_NAME"
             aws autoscaling wait instance-refresh-completed --auto-scaling-group-name $ASG_NAME --region us-east-1
           fi
 
-      # 10. Smoke Test de santé sur l'ALB
       - name: Run Smoke Test
         id: smoke_test
         run: |
           ALB_URL=$(cd terraform && terraform output -raw alb_url_https)
           echo "Testing application health at $ALB_URL/actuator/health"
-          
-          # Tentative de connexion pendant 2 minutes (12 x 10 sec)
           for i in {1..12}; do
             HTTP_STATUS=$(curl -k -s -o /dev/null -w "%{http_code}" "$ALB_URL/actuator/health" || true)
             if [ "$HTTP_STATUS" -eq 200 ]; then
@@ -94,14 +173,12 @@ jobs:
             echo "Attempt $i: Received status $HTTP_STATUS. Retrying in 10s..."
             sleep 10
           done
-          
           echo "ERROR: Smoke test failed after 2 minutes!"
           exit 1
 
-      # 11. Rollback automatique en cas d'échec du Smoke Test
       - name: Rollback ASG on Smoke Test Failure
         if: failure() && steps.smoke_test.outcome == 'failure'
         run: |
           ASG_NAME=$(cd terraform && terraform output -raw asg_name || echo "")
-          echo "Smoke test failed. Cancelling/Rolling back Instance Refresh..."
+          echo "Smoke test failed. Rolling back Instance Refresh..."
           aws autoscaling cancel-instance-refresh --auto-scaling-group-name $ASG_NAME --region us-east-1 || true
